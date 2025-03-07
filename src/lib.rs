@@ -1,7 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![deny(unsafe_code, missing_docs)]
 #![cfg_attr(not(test), no_std)]
-
 #[cfg(debug_assertions)]
 extern crate alloc;
 
