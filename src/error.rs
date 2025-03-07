@@ -17,12 +17,6 @@ impl<I: embedded_hal::i2c::ErrorType> From<sensirion_i2c::i2c::Error<I>> for Err
             sensirion_i2c::i2c::Error::I2cWrite(e) => Error::I2c(e),
             sensirion_i2c::i2c::Error::I2cRead(e) => Error::I2c(e),
             sensirion_i2c::i2c::Error::Crc => Error::Crc,
-            sensirion_i2c::i2c::Error::InvalidCommand => {
-                panic!(
-                    "The value sent as an I²C command couldn't be converted \
-                     into a valid command."
-                )
-            }
         }
     }
 }

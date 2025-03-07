@@ -1,8 +1,7 @@
 use crate::{command::Command, error::Error, Measurement, Rate, Repeatability, Status};
 use bytes::{Buf, BufMut, BytesMut};
 use core::{fmt::Debug, time::Duration};
-use embedded_hal::i2c::Operation;
-use embedded_hal_async::i2c::AddressMode;
+use embedded_hal::i2c::{Operation, SevenBitAddress};
 
 /// Represents an async driver for the SHT3x device.
 #[derive(Debug, Default)]
@@ -12,16 +11,15 @@ pub struct Sht3x<I2C, A, D> {
     delay: D,
 }
 
-impl<I2C, A, D> Sht3x<I2C, A, D>
+impl<I2C, D> Sht3x<I2C, SevenBitAddress, D>
 where
-    I2C: embedded_hal_async::i2c::I2c<A> + Debug,
-    A: AddressMode + Copy,
+    I2C: embedded_hal_async::i2c::I2c + Debug,
     D: embedded_hal::delay::DelayNs,
 {
     /// Instantiate a new async SHT3x device driver.
-    pub fn new(i2c: I2C, address: impl Into<A>, delay: D) -> Self {
+    pub fn new(i2c: I2C, address: SevenBitAddress, delay: D) -> Self {
         Self {
-            address: address.into(),
+            address,
             i2c,
             delay,
         }
@@ -157,9 +155,10 @@ where
     }
 
     async fn write_command(&mut self, command: Command) -> Result<(), Error<I2C::Error>> {
-        sensirion_i2c::i2c_async::write_command_u16(&mut self.i2c, self.address, command)
+        sensirion_i2c::i2c_async::write_command_u16(&mut self.i2c, self.address, command.into())
             .await
-            .map_err(Error::from)
+            .map_err(sensirion_i2c::i2c::Error::<I2C>::I2cWrite)?;
+        Ok(())
     }
 
     async fn write_command_with_args(
@@ -205,7 +204,7 @@ mod tests {
     fn create_device(
         i2c: &mut embedded_hal_mock::common::Generic<Transaction>,
     ) -> Sht3x<&mut embedded_hal_mock::common::Generic<Transaction>, u8, NoopDelay> {
-        Sht3x::new(i2c, AddressPin::default(), NoopDelay::default())
+        Sht3x::new(i2c, AddressPin::default().into(), NoopDelay::default())
     }
 
     #[test]

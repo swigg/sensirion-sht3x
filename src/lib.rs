@@ -9,8 +9,8 @@ use core::fmt::Display;
 ///
 pub mod blocking;
 
-#[cfg(feature = "embedded-hal-async")]
 ///
+#[cfg(feature = "embedded-hal-async")]
 pub mod asynchronous;
 
 #[doc(hidden)]

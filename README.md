@@ -47,7 +47,7 @@ fn main() {
     let mut i2c = i2c::Mock::new(&[]);
 
     // Create the sensor
-    let mut sensor = Sht3x::new(i2c, AddressPin::High, NoopDelay::default());
+    let mut sensor = Sht3x::new(i2c, AddressPin::High.into(), NoopDelay::default());
 
     // Perform measurement
     let measurement = sensor.measure_singleshot(Repeatability::High).expect("Unable to get measurement");
