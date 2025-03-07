@@ -211,7 +211,7 @@ impl From<Measurement> for Vec<u8> {
 
         let temperature =
             (((value.temperature.as_celsius() + 45.0) * u16::MAX as f64) / 175.0) as u16;
-        buffer.put(&temperature.to_be_bytes()[..]);
+        buffer.put_u16(temperature);
         buffer.put_u8(sensirion_i2c::crc8::calculate(&temperature.to_be_bytes()));
 
         buffer.to_vec()

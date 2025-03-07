@@ -151,7 +151,7 @@ where
             &delay_duration,
             self.address,
             command,
-            &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
         );
         self.delay.delay_ns(delay_duration.as_nanos() as u32);
 
@@ -206,7 +206,7 @@ where
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}], args: [{}]}}",
                 self.address,
                 command,
-                &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+                u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
                 &buffer[2..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
             );
         } else {
@@ -215,7 +215,7 @@ where
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
                 self.address,
                 command,
-                &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+                u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
             );
         }
         
