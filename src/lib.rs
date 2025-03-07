@@ -2,8 +2,11 @@
 #![deny(unsafe_code, missing_docs)]
 #![cfg_attr(not(test), no_std)]
 
+#[cfg(debug_assertions)]
+extern crate alloc;
+
 use bitflags::bitflags;
-use core::fmt::Display;
+use core::{fmt::Display, u16};
 
 ///
 pub mod blocking;
@@ -207,7 +210,8 @@ impl From<Measurement> for Vec<u8> {
             &relative_humidity.to_be_bytes(),
         ));
 
-        let temperature = (((value.temperature.as_celsius() + 45.0) * 65535.0) / 175.0) as u16;
+        let temperature =
+            (((value.temperature.as_celsius() + 45.0) * u16::MAX as f64) / 175.0) as u16;
         buffer.put(&temperature.to_be_bytes()[..]);
         buffer.put_u8(sensirion_i2c::crc8::calculate(&temperature.to_be_bytes()));
 
@@ -225,8 +229,7 @@ impl From<Measurement> for Vec<u8> {
 ///
 /// A `Temperature` object representing the converted temperature.
 fn temperature_from_raw(raw: u16) -> Temperature {
-    // Conversion formula: T = -45 + 175 * raw / (2^16-1)
-    Temperature::from_celsius(175.0 * raw as f64 / 65535.0 - 45.0)
+    Temperature::from_celsius(-45.0 + 175.0 * raw as f64 / u16::MAX as f64)
 }
 
 /// Converts a raw sensor measurement into a [`measurement::Humidity`].
@@ -239,8 +242,7 @@ fn temperature_from_raw(raw: u16) -> Temperature {
 ///
 /// A `Humidity` object representing the converted relative humidity.
 fn relative_humidity_from_raw(raw: u16) -> Humidity {
-    // Conversion formula: RH = raw / (2^16-1) * 100
-    Humidity::from_percent(100.0 * raw as f64 / 65535.0)
+    Humidity::from_percent(raw as f64 / u16::MAX as f64 * 100.0)
 }
 
 #[cfg(test)]

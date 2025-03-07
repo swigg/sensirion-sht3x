@@ -144,18 +144,44 @@ where
     ) -> Result<&'a mut [u8], Error<I2C::Error>> {
         self.write_command_with_args(command, args).await?;
 
-        self.delay
-            .delay_ms(Duration::from(command).as_millis() as u32);
+        let delay_duration: Duration = command.into();
+        #[cfg(debug_assertions)]
+        log::trace!(
+            "Waiting {:?} after sending {{address: {:#x?}, command: {:?}[{}]}}",
+            &delay_duration,
+            self.address,
+            command,
+            &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+        );
+        self.delay.delay_ns(delay_duration.as_nanos() as u32);
 
         sensirion_i2c::i2c_async::read_words_with_crc(&mut self.i2c, self.address, buffer)
             .await
             .map_err(Error::from)?;
 
+        #[cfg(debug_assertions)]
+        log::trace!(
+            "Read from bus {{address: {:#x?}, command: {:?}[{}], response: [{}]}}",
+            self.address,
+            command,
+            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            &buffer[..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+        );
+
         Ok(buffer)
     }
 
     async fn write_command(&mut self, command: Command) -> Result<(), Error<I2C::Error>> {
-        sensirion_i2c::i2c_async::write_command_u16(&mut self.i2c, self.address, command.into())
+        let command_code: u16 = command.into();
+
+        #[cfg(debug_assertions)]
+        log::trace!(
+            "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
+            self.address,
+            command,
+            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+        );
+        sensirion_i2c::i2c_async::write_command_u16(&mut self.i2c, self.address, command_code)
             .await
             .map_err(sensirion_i2c::i2c::Error::<I2C>::I2cWrite)?;
         Ok(())
@@ -170,9 +196,29 @@ where
 
         buffer.put_u16(command.into());
         if let Some(args) = args {
-            args.iter().for_each(|arg| buffer.put_u16(*arg));
-        }
+            args.iter().for_each(|arg| {
+                buffer.put_u16(*arg);
+                buffer.put_u8(sensirion_i2c::crc8::calculate(&(*arg).to_be_bytes()[..]))
+            });
 
+            #[cfg(debug_assertions)]
+            log::trace!(
+                "Writing to bus {{address: {:#x?}, command: {:?}[{}], args: [{}]}}",
+                self.address,
+                command,
+                &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+                &buffer[2..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            );
+        } else {
+            #[cfg(debug_assertions)]
+            log::trace!(
+                "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
+                self.address,
+                command,
+                &buffer[0..2].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            );
+        }
+        
         self.i2c
             .write(self.address, &buffer[..])
             .await
