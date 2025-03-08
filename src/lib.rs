@@ -180,20 +180,20 @@ impl From<Status> for Vec<u8> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Represents a sensor measurement.
 pub struct Measurement {
-    /// The relative humidity reported by the sensor.
-    pub relative_humidity: Humidity,
-
     /// The temperature reported by the sensor.
     pub temperature: Temperature,
+    
+    /// The relative humidity reported by the sensor.
+    pub relative_humidity: Humidity,
 }
 
 impl<T: AsRef<[u8]>> From<T> for Measurement {
     fn from(value: T) -> Self {
         Measurement {
+            temperature: temperature_from_raw(value.as_ref().get(0..2).unwrap().get_u16()),
             relative_humidity: relative_humidity_from_raw(
-                value.as_ref().get(0..2).unwrap().get_u16(),
+                value.as_ref().get(3..5).unwrap().get_u16(),
             ),
-            temperature: temperature_from_raw(value.as_ref().get(3..5).unwrap().get_u16()),
         }
     }
 }
