@@ -1,11 +1,10 @@
 use crate::{command::Command, error::Error, Measurement, Rate, Repeatability, Status};
 use bytes::{Buf, BufMut, BytesMut};
-use core::fmt::Debug;
 use core::time::Duration;
 use embedded_hal::i2c::{Operation, SevenBitAddress};
 
 /// Represents a blocking driver for the SHT3x device.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Sht3x<I2C, A, D> {
     i2c: I2C,
     address: A,
@@ -14,7 +13,7 @@ pub struct Sht3x<I2C, A, D> {
 
 impl<I2C, D> Sht3x<I2C, SevenBitAddress, D>
 where
-    I2C: embedded_hal::i2c::I2c + Debug,
+    I2C: embedded_hal::i2c::I2c,
     D: embedded_hal::delay::DelayNs,
 {
     /// Instantiate a new blocking SHT3x device driver.
@@ -147,7 +146,12 @@ where
             &delay_duration,
             self.address,
             command,
-            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            u16::from(command)
+                .to_be_bytes()
+                .iter()
+                .map(|b| alloc::format!("{:#x?}", b))
+                .collect::<alloc::vec::Vec<_>>()
+                .join(", "),
         );
         self.delay.delay_ns(delay_duration.as_nanos() as u32);
 
@@ -159,8 +163,17 @@ where
             "Read from bus {{address: {:#x?}, command: {:?}[{}], response: [{}]}}",
             self.address,
             command,
-            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
-            &buffer[..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            u16::from(command)
+                .to_be_bytes()
+                .iter()
+                .map(|b| alloc::format!("{:#x?}", b))
+                .collect::<alloc::vec::Vec<_>>()
+                .join(", "),
+            &buffer[..]
+                .iter()
+                .map(|b| alloc::format!("{:#x?}", b))
+                .collect::<alloc::vec::Vec<_>>()
+                .join(", "),
         );
 
         Ok(buffer)
@@ -174,7 +187,12 @@ where
             "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
             self.address,
             command,
-            u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+            u16::from(command)
+                .to_be_bytes()
+                .iter()
+                .map(|b| alloc::format!("{:#x?}", b))
+                .collect::<alloc::vec::Vec<_>>()
+                .join(", "),
         );
         sensirion_i2c::i2c::write_command_u16(&mut self.i2c, self.address, command_code)
             .map_err(sensirion_i2c::i2c::Error::<I2C>::I2cWrite)?;
@@ -200,8 +218,17 @@ where
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}], args: [{}]}}",
                 self.address,
                 command,
-                u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
-                &buffer[2..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+                u16::from(command)
+                    .to_be_bytes()
+                    .iter()
+                    .map(|b| alloc::format!("{:#x?}", b))
+                    .collect::<alloc::vec::Vec<_>>()
+                    .join(", "),
+                &buffer[2..]
+                    .iter()
+                    .map(|b| alloc::format!("{:#x?}", b))
+                    .collect::<alloc::vec::Vec<_>>()
+                    .join(", "),
             );
         } else {
             #[cfg(feature = "log")]
@@ -209,7 +236,12 @@ where
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
                 self.address,
                 command,
-                u16::from(command).to_be_bytes().iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
+                u16::from(command)
+                    .to_be_bytes()
+                    .iter()
+                    .map(|b| alloc::format!("{:#x?}", b))
+                    .collect::<alloc::vec::Vec<_>>()
+                    .join(", "),
             );
         }
 
