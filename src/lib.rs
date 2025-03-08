@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![deny(unsafe_code, missing_docs)]
 #![cfg_attr(not(test), no_std)]
-#[cfg(debug_assertions)]
+#[cfg(feature = "log")]
 extern crate alloc;
 
 use bitflags::bitflags;
