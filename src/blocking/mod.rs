@@ -141,7 +141,7 @@ where
         self.write_command_with_args(command, args)?;
 
         let delay_duration: Duration = command.into();
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, feature = "log"))]
         log::trace!(
             "Waiting {:?} after sending {{address: {:#x?}, command: {:?}[{}]}}",
             &delay_duration,
@@ -154,7 +154,7 @@ where
         sensirion_i2c::i2c::read_words_with_crc(&mut self.i2c, self.address, buffer)
             .map_err(Error::from)?;
 
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, feature = "log"))]
         log::trace!(
             "Read from bus {{address: {:#x?}, command: {:?}[{}], response: [{}]}}",
             self.address,
@@ -169,7 +169,7 @@ where
     fn write_command(&mut self, command: Command) -> Result<(), Error<I2C::Error>> {
         let command_code: u16 = command.into();
 
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, feature = "log"))]
         log::trace!(
             "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
             self.address,
@@ -195,7 +195,7 @@ where
                 buffer.put_u8(sensirion_i2c::crc8::calculate(&(*arg).to_be_bytes()[..]))
             });
 
-            #[cfg(debug_assertions)]
+            #[cfg(any(debug_assertions, feature = "log"))]
             log::trace!(
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}], args: [{}]}}",
                 self.address,
@@ -204,7 +204,7 @@ where
                 &buffer[2..].iter().map(|b| alloc::format!("{:#x?}", b)).collect::<alloc::vec::Vec<_>>().join(", "),
             );
         } else {
-            #[cfg(debug_assertions)]
+            #[cfg(any(debug_assertions, feature = "log"))]
             log::trace!(
                 "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
                 self.address,
