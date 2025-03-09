@@ -38,7 +38,7 @@ The digital SHT3x humidity sensor series takes sensor technology to a new level.
 ## Usage
 
 ```rust,no_run
-use sensirion_sht3x::{AddressPin, Repeatability, blocking::Sht3x, error::Error};
+use sensirion_sht3x::{AddressPin, Repeatability, blocking::Sht3x, Error};
 use embedded_hal_mock::eh1::{delay::NoopDelay, i2c};
 
 fn main() {

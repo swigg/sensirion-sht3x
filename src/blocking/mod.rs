@@ -1,4 +1,4 @@
-use crate::{command::Command, error::Error, Measurement, Rate, Repeatability, Status};
+use crate::{command::Command, Error, Measurement, Rate, Repeatability, Status};
 use bytes::{Buf, BufMut, BytesMut};
 use core::time::Duration;
 use embedded_hal::i2c::{Operation, SevenBitAddress};
@@ -67,7 +67,7 @@ where
     }
 
     /// Begin publishing periodic measurements.
-    pub fn periodic_measurements_start(
+    pub fn periodic_measurement_start(
         &mut self,
         repeatability: Repeatability,
         rate: Rate,
@@ -110,11 +110,11 @@ where
     }
 
     /// Read the contents of the status register.
-    pub fn status(&mut self) -> Result<Status, Error<I2C::Error>> {
+    pub fn status_fetch(&mut self) -> Result<Status, Error<I2C::Error>> {
         let mut status = BytesMut::with_capacity(3);
         status.resize(3, 0);
 
-        self.read_command(Command::Status, &mut status)
+        self.read_command(Command::StatusFetch, &mut status)
             .map(|status| Status::from_bits_retain(status.get(0..2).unwrap().get_u16()))
     }
 
@@ -367,7 +367,7 @@ mod tests {
             assert_eq!(
                 (),
                 sht3x
-                    .periodic_measurements_start(Repeatability::High, Rate::R1)
+                    .periodic_measurement_start(Repeatability::High, Rate::R1)
                     .unwrap()
             );
         });
@@ -440,13 +440,13 @@ mod tests {
         let expectations = [
             Transaction::write(
                 AddressPin::default().into(),
-                u16::from(Command::Status).to_be_bytes().to_vec(),
+                u16::from(Command::StatusFetch).to_be_bytes().to_vec(),
             ),
             Transaction::read(AddressPin::default().into(), status.clone().into()),
         ];
 
         create_i2c(&expectations, |mut sht3x| {
-            let i2c_status = sht3x.status().unwrap();
+            let i2c_status = sht3x.status_fetch().unwrap();
             assert_eq!(status.is_all(), i2c_status.is_all());
             assert!(status.heater_enabled());
             assert!(status.write_data_checksum_error());

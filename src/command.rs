@@ -38,7 +38,7 @@ pub(crate) enum Command {
     ///
     /// # See also
     /// - [`sensirion_sht3x::Status`]
-    Status,
+    StatusFetch,
 
     /// Clear specific flags (Bit 15, 11, 10, 4) in the status
     /// register, setting them to zero.
@@ -93,7 +93,7 @@ impl From<Command> for u16 {
             Command::SoftReset => 0x30a2,
             Command::HeaterEnable => 0x306d,
             Command::HeaterDisable => 0x3066,
-            Command::Status => 0xf32d,
+            Command::StatusFetch => 0xf32d,
             Command::StatusClear => 0x3041,
         }
     }

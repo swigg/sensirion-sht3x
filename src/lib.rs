@@ -7,18 +7,17 @@ extern crate alloc;
 use bitflags::bitflags;
 use core::{fmt::Display, u16};
 
-///
+/// Provides blocking implementation
 pub mod blocking;
 
-///
+/// Provides asynchronous implementation with feature `embedded-hal-async`
 #[cfg(feature = "embedded-hal-async")]
 pub mod asynchronous;
 
-#[doc(hidden)]
-pub mod command;
+mod command;
 
-///
-pub mod error;
+mod error;
+pub use error::*;
 
 use bytes::Buf;
 #[cfg(test)]
@@ -182,7 +181,7 @@ impl From<Status> for Vec<u8> {
 pub struct Measurement {
     /// The temperature reported by the sensor.
     pub temperature: Temperature,
-    
+
     /// The relative humidity reported by the sensor.
     pub relative_humidity: Humidity,
 }
@@ -203,16 +202,16 @@ impl From<Measurement> for Vec<u8> {
     fn from(value: Measurement) -> Self {
         let mut buffer = BytesMut::with_capacity(6);
 
-        let relative_humidity = ((value.relative_humidity.as_percent() * 65535.0) / 100.0) as u16;
-        buffer.put_u16(relative_humidity);
-        buffer.put_u8(sensirion_i2c::crc8::calculate(
-            &relative_humidity.to_be_bytes(),
-        ));
-
         let temperature =
             (((value.temperature.as_celsius() + 45.0) * u16::MAX as f64) / 175.0) as u16;
         buffer.put_u16(temperature);
         buffer.put_u8(sensirion_i2c::crc8::calculate(&temperature.to_be_bytes()));
+
+        let relative_humidity = ((value.relative_humidity.as_percent() * u16::MAX as f64) / 100.0) as u16;
+        buffer.put_u16(relative_humidity);
+        buffer.put_u8(sensirion_i2c::crc8::calculate(
+            &relative_humidity.to_be_bytes(),
+        ));
 
         buffer.to_vec()
     }
