@@ -8,9 +8,11 @@ an asynchronous interface by enabling the `embedded-hal-async` feature.
 
 The digital SHT3x humidity sensor series takes sensor technology to a new level. As the successor of the SHT2x series it sets the industry standard in humidity sensing. The SHT3x humidity sensor series consists of a low-cost version with the SHT30 humidity sensor, a standard version with the SHT31 humidity sensor, and a high-end version with the SHT35 humidity sensor. The SHT3x humidity sensor series combines multiple functions and various interfaces (I<sup>2</sup>C, analog voltage output) with an applications-friendly, very wide operating voltage range (2.15 to 5.5 V). 
 
-| SHT30            | SHT31            | SHT35              |
-| ---------------- | ---------------- | ------------------ |
-| ±2 %RH / ±0.2 °C | ±2 %RH / ±0.2 °C | ±1.5 %RH / ±0.1 °C |
+| Model  | Humidity Accuracy | Temperature Accuracy | Use Case |
+|--------|------------------|---------------------|----------|
+| SHT30  | ±3% RH          | ±0.3°C              | Cost-sensitive applications |
+| SHT31  | ±2% RH          | ±0.3°C              | Home automation, HVAC |
+| SHT35  | ±1.5% RH        | ±0.2°C              | Industrial, medical |
 
 > [!IMPORTANT]  
 > This library operates under the assumption that the sensor is supplied with a voltage of ≥2.4 V for accurate measurement timing.
@@ -38,7 +40,7 @@ The digital SHT3x humidity sensor series takes sensor technology to a new level.
 ## Usage
 
 ```rust,no_run
-use sensirion_sht3x::{AddressPin, Repeatability, blocking::Sht3x, Error};
+use sensirion_sht3x::{AddressPin, Repeatability, blocking::Sht3x};
 use embedded_hal_mock::eh1::{delay::NoopDelay, i2c};
 
 fn main() {
