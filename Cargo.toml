@@ -30,6 +30,7 @@ futures = { version = "0.3.31", default-features = false, features = ["executor"
 
 [features]
 default = []
+log = ["dep:log", "sensirion-core/log"]
 embedded-hal-async = [
     "dep:embedded-hal-async",
     "embedded-hal-mock/embedded-hal-async",

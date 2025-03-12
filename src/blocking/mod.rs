@@ -1,7 +1,7 @@
-use crate::{command::Command, Error, Measurement, Rate, Repeatability, Status};
-use bytes::{Buf, BufMut, BytesMut};
-use core::time::Duration;
+use crate::{command::Command, Measurement, Rate, Repeatability, Status};
+use bytes::{Buf, BytesMut};
 use embedded_hal::i2c::{Operation, SevenBitAddress};
+use sensirion_core::{blocking::SensirionI2c, Error};
 
 /// Represents a blocking driver for the SHT3x device.
 #[derive(Default)]
@@ -9,6 +9,24 @@ pub struct Sht3x<I2C, A, D> {
     i2c: I2C,
     address: A,
     delay: D,
+}
+
+impl<I2C, D> SensirionI2c<I2C, D> for Sht3x<I2C, SevenBitAddress, D>
+where
+    I2C: embedded_hal::i2c::I2c,
+    D: embedded_hal::delay::DelayNs,
+{
+    fn i2c(&mut self) -> &mut I2C {
+        &mut self.i2c
+    }
+
+    fn address(&mut self) -> SevenBitAddress {
+        self.address
+    }
+
+    fn delay(&mut self) -> &mut D {
+        &mut self.delay
+    }
 }
 
 impl<I2C, D> Sht3x<I2C, SevenBitAddress, D>
@@ -122,135 +140,6 @@ where
     pub fn status_clear(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_command(Command::StatusClear)
     }
-
-    fn read_command<'a>(
-        &mut self,
-        command: Command,
-        buffer: &'a mut [u8],
-    ) -> Result<&'a mut [u8], Error<I2C::Error>> {
-        self.read_command_with_args(command, None, buffer)
-    }
-
-    fn read_command_with_args<'a>(
-        &mut self,
-        command: Command,
-        args: Option<&[u16]>,
-        buffer: &'a mut [u8],
-    ) -> Result<&'a mut [u8], Error<I2C::Error>> {
-        self.write_command_with_args(command, args)?;
-
-        let delay_duration: Duration = command.into();
-        #[cfg(feature = "log")]
-        log::trace!(
-            "Waiting {:?} after sending {{address: {:#x?}, command: {:?}[{}]}}",
-            &delay_duration,
-            self.address,
-            command,
-            u16::from(command)
-                .to_be_bytes()
-                .iter()
-                .map(|b| alloc::format!("{:#x?}", b))
-                .collect::<alloc::vec::Vec<_>>()
-                .join(", "),
-        );
-        self.delay.delay_ns(delay_duration.as_nanos() as u32);
-
-        sensirion_i2c::i2c::read_words_with_crc(&mut self.i2c, self.address, buffer)
-            .map_err(Error::from)?;
-
-        #[cfg(feature = "log")]
-        log::trace!(
-            "Read from bus {{address: {:#x?}, command: {:?}[{}], response: [{}]}}",
-            self.address,
-            command,
-            u16::from(command)
-                .to_be_bytes()
-                .iter()
-                .map(|b| alloc::format!("{:#x?}", b))
-                .collect::<alloc::vec::Vec<_>>()
-                .join(", "),
-            &buffer[..]
-                .iter()
-                .map(|b| alloc::format!("{:#x?}", b))
-                .collect::<alloc::vec::Vec<_>>()
-                .join(", "),
-        );
-
-        Ok(buffer)
-    }
-
-    fn write_command(&mut self, command: Command) -> Result<(), Error<I2C::Error>> {
-        let command_code: u16 = command.into();
-
-        #[cfg(feature = "log")]
-        log::trace!(
-            "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
-            self.address,
-            command,
-            u16::from(command)
-                .to_be_bytes()
-                .iter()
-                .map(|b| alloc::format!("{:#x?}", b))
-                .collect::<alloc::vec::Vec<_>>()
-                .join(", "),
-        );
-        sensirion_i2c::i2c::write_command_u16(&mut self.i2c, self.address, command_code)
-            .map_err(sensirion_i2c::i2c::Error::<I2C>::I2cWrite)?;
-        Ok(())
-    }
-
-    fn write_command_with_args(
-        &mut self,
-        command: Command,
-        args: Option<&[u16]>,
-    ) -> Result<(), Error<I2C::Error>> {
-        let mut buffer = BytesMut::with_capacity(8);
-
-        buffer.put_u16(command.into());
-        if let Some(args) = args {
-            args.iter().for_each(|arg| {
-                buffer.put_u16(*arg);
-                buffer.put_u8(sensirion_i2c::crc8::calculate(&(*arg).to_be_bytes()[..]))
-            });
-
-            #[cfg(feature = "log")]
-            log::trace!(
-                "Writing to bus {{address: {:#x?}, command: {:?}[{}], args: [{}]}}",
-                self.address,
-                command,
-                u16::from(command)
-                    .to_be_bytes()
-                    .iter()
-                    .map(|b| alloc::format!("{:#x?}", b))
-                    .collect::<alloc::vec::Vec<_>>()
-                    .join(", "),
-                &buffer[2..]
-                    .iter()
-                    .map(|b| alloc::format!("{:#x?}", b))
-                    .collect::<alloc::vec::Vec<_>>()
-                    .join(", "),
-            );
-        } else {
-            #[cfg(feature = "log")]
-            log::trace!(
-                "Writing to bus {{address: {:#x?}, command: {:?}[{}]}}",
-                self.address,
-                command,
-                u16::from(command)
-                    .to_be_bytes()
-                    .iter()
-                    .map(|b| alloc::format!("{:#x?}", b))
-                    .collect::<alloc::vec::Vec<_>>()
-                    .join(", "),
-            );
-        }
-
-        self.i2c
-            .write(self.address, &buffer[..])
-            .map_err(sensirion_i2c::i2c::Error::<I2C>::I2cWrite)?;
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -269,8 +158,8 @@ mod tests {
         action: T,
     ) {
         let mut i2c_mock = embedded_hal_mock::eh1::i2c::Mock::new(expectations);
-        let sht3x = create_device(&mut i2c_mock);
-        action(sht3x);
+        let device = create_device(&mut i2c_mock);
+        action(device);
         i2c_mock.done();
     }
 
@@ -283,7 +172,8 @@ mod tests {
     #[test]
     fn test_new() {
         create_i2c(&[], |sht3x| {
-            log::info!("here {}", sht3x.address);
+            #[cfg(feature = "log")]
+            log::info!("Address {}", sht3x.address);
         });
     }
 
@@ -337,8 +227,8 @@ mod tests {
             u16::from(Command::HeaterDisable).to_be_bytes().to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
-            assert_eq!((), sht3x.heater_disable().unwrap())
+        create_i2c(&expectations, |mut device| {
+            assert_eq!((), device.heater_disable().unwrap())
         });
     }
 
@@ -349,8 +239,8 @@ mod tests {
             u16::from(Command::HeaterEnable).to_be_bytes().to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
-            assert_eq!((), sht3x.heater_enable().unwrap())
+        create_i2c(&expectations, |mut device| {
+            assert_eq!((), device.heater_enable().unwrap())
         });
     }
 
@@ -363,10 +253,10 @@ mod tests {
                 .to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
+        create_i2c(&expectations, |mut device| {
             assert_eq!(
                 (),
-                sht3x
+                device
                     .periodic_measurement_start(Repeatability::High, Rate::R1)
                     .unwrap()
             );
@@ -380,8 +270,8 @@ mod tests {
             u16::from(Command::PeriodicWithART).to_be_bytes().to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
-            assert_eq!((), sht3x.periodic_measurement_start_with_art().unwrap());
+        create_i2c(&expectations, |mut device| {
+            assert_eq!((), device.periodic_measurement_start_with_art().unwrap());
         });
     }
 
@@ -405,8 +295,8 @@ mod tests {
             Transaction::read(AddressPin::default().into(), measurement.clone().into()),
         ];
 
-        create_i2c(&expectations, |mut sht3x| {
-            let i2c_measurement = sht3x.measure_singleshot(Repeatability::High).unwrap();
+        create_i2c(&expectations, |mut device| {
+            let i2c_measurement = device.measure_singleshot(Repeatability::High).unwrap();
             assert!(
                 (i2c_measurement.relative_humidity.as_percent()
                     - measurement.relative_humidity.as_percent())
@@ -428,8 +318,8 @@ mod tests {
             u16::from(Command::SoftReset).to_be_bytes().to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
-            assert_eq!((), sht3x.soft_reset().unwrap());
+        create_i2c(&expectations, |mut device| {
+            assert_eq!((), device.soft_reset().unwrap());
         });
     }
 
@@ -445,8 +335,8 @@ mod tests {
             Transaction::read(AddressPin::default().into(), status.clone().into()),
         ];
 
-        create_i2c(&expectations, |mut sht3x| {
-            let i2c_status = sht3x.status_fetch().unwrap();
+        create_i2c(&expectations, |mut device| {
+            let i2c_status = device.status_fetch().unwrap();
             assert_eq!(status.is_all(), i2c_status.is_all());
             assert!(status.heater_enabled());
             assert!(status.write_data_checksum_error());
@@ -465,8 +355,8 @@ mod tests {
             u16::from(Command::StatusClear).to_be_bytes().to_vec(),
         )];
 
-        create_i2c(&expectations, |mut sht3x| {
-            assert_eq!((), sht3x.status_clear().unwrap());
+        create_i2c(&expectations, |mut device| {
+            assert_eq!((), device.status_clear().unwrap());
         });
     }
 }

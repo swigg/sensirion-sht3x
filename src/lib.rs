@@ -16,9 +16,6 @@ pub mod asynchronous;
 
 mod command;
 
-mod error;
-pub use error::*;
-
 use bytes::Buf;
 #[cfg(test)]
 use bytes::{BufMut, BytesMut};
@@ -207,7 +204,8 @@ impl From<Measurement> for Vec<u8> {
         buffer.put_u16(temperature);
         buffer.put_u8(sensirion_i2c::crc8::calculate(&temperature.to_be_bytes()));
 
-        let relative_humidity = ((value.relative_humidity.as_percent() * u16::MAX as f64) / 100.0) as u16;
+        let relative_humidity =
+            ((value.relative_humidity.as_percent() * u16::MAX as f64) / 100.0) as u16;
         buffer.put_u16(relative_humidity);
         buffer.put_u8(sensirion_i2c::crc8::calculate(
             &relative_humidity.to_be_bytes(),
