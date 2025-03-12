@@ -20,6 +20,7 @@ embedded-hal-async = { version = "1.0.0", optional = true }
 log = { version = "0.4.26", optional = true }
 measurements = "0.11.0"
 sensirion-i2c = "0.4.0"
+sensirion-core = { git = "https://gitea.swigg.net/dustins/sensirion-core", branch = "develop" }
 
 [dev-dependencies]
 ctor = "0.4.0"
@@ -28,5 +29,10 @@ env_logger = "0.11.6"
 futures = { version = "0.3.31", default-features = false, features = ["executor"] }
 
 [features]
-default = ["log"]
-embedded-hal-async = ["dep:embedded-hal-async", "embedded-hal-mock/embedded-hal-async", "sensirion-i2c/embedded-hal-async"]
+default = []
+embedded-hal-async = [
+    "dep:embedded-hal-async",
+    "embedded-hal-mock/embedded-hal-async",
+    "sensirion-i2c/embedded-hal-async",
+    "sensirion-core/embedded-hal-async"
+]
