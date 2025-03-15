@@ -5,13 +5,13 @@ use sensirion_core::{blocking::SensirionI2c, Error};
 
 /// Represents a blocking driver for the SHT3x device.
 #[derive(Default)]
-pub struct Sht3x<I2C, A, D> {
+pub struct Sht3x<I2C, D> {
     i2c: I2C,
-    address: A,
+    address: SevenBitAddress,
     delay: D,
 }
 
-impl<I2C, D> SensirionI2c<I2C, D> for Sht3x<I2C, SevenBitAddress, D>
+impl<I2C, D> SensirionI2c<I2C, D> for Sht3x<I2C, D>
 where
     I2C: embedded_hal::i2c::I2c,
     D: embedded_hal::delay::DelayNs,
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<I2C, D> Sht3x<I2C, SevenBitAddress, D>
+impl<I2C, D> Sht3x<I2C, D>
 where
     I2C: embedded_hal::i2c::I2c,
     D: embedded_hal::delay::DelayNs,
@@ -152,7 +152,7 @@ mod tests {
     use measurements::{Humidity, Temperature};
 
     fn create_i2c<
-        T: FnOnce(Sht3x<&mut embedded_hal_mock::common::Generic<Transaction>, u8, NoopDelay>),
+        T: FnOnce(Sht3x<&mut embedded_hal_mock::common::Generic<Transaction>, NoopDelay>),
     >(
         expectations: &[Transaction],
         action: T,
@@ -165,7 +165,7 @@ mod tests {
 
     fn create_device(
         i2c: &mut embedded_hal_mock::common::Generic<Transaction>,
-    ) -> Sht3x<&mut embedded_hal_mock::common::Generic<Transaction>, u8, NoopDelay> {
+    ) -> Sht3x<&mut embedded_hal_mock::common::Generic<Transaction>, NoopDelay> {
         Sht3x::new(i2c, AddressPin::default().into(), NoopDelay::default())
     }
 
