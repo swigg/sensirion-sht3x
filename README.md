@@ -1,7 +1,6 @@
 # sensirion-sht3x
 
-This is a platform agnostic driver for Sensirion SHT3x series of temperature and humidity sensors using traits from [`embedded-hal`]() and [`embedded-hal-async`]()
-to allow generalized use on any [`no_std`](https://docs.rust-embedded.org/book/intro/no-std.html) platform. It provides both a blocking interface by default and
+This is a platform agnostic driver for Sensirion SHT3x series of temperature and humidity sensors using traits from [`embedded-hal`](https://docs.rs/embedded-hal/latest/embedded_hal/) and [`embedded-hal-async`](https://docs.rs/embedded-hal-async/latest/embedded_hal_async/) to allow generalized use on any [`no_std`](https://docs.rust-embedded.org/book/intro/no-std.html) platform. It provides both a blocking interface by default and
 an asynchronous interface by enabling the `embedded-hal-async` feature.
 
 ## Device
